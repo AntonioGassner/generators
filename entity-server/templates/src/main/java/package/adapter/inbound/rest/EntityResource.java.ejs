@@ -1,0 +1,202 @@
+<%#
+ Copyright 2013-2021 the original author or authors from the JHipster project.
+
+ This file is part of the JHipster project, see https://www.jhipster.tech/
+ for more information.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-%>
+package <%= packageName %>.web.rest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.zalando.problem.Problem;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import it.maggioli.icarocloud.baseservice.web.rest.errors.RestApiException;
+import it.maggioli.icarocloud.baseservice.web.rest.errors.ServiceElaborationException;
+import java.util.UUID;
+
+<%_
+    const instanceType = restClass;
+    const instanceName = restInstance;
+    const mapper = entityInstance  + 'Mapper';
+    const entityToDtoReference = mapper + '::' + 'toDto';
+_%>
+
+/**
+ * REST controller for managing {@link <%= packageName %>.domain.<%= persistClass %>}.
+ */
+@RestController
+@RequestMapping("/api/<%= entityInstance %>")
+public class <%= entityClass %>Resource {
+
+    private final Logger log = LoggerFactory.getLogger(<%= entityClass %>Resource.class);
+    
+    @Autowired
+	private <%= entityClass %>Service <%= entityInstance %>Service;
+    
+    @InitBinder
+	public void initBinder(WebDataBinder binder) {
+	    binder.setDisallowedFields(new String[]{});
+	}
+	
+	public <%= entityClass %>Resource() {
+	}
+    
+    /**
+     * Create a new <%= entityInstance %>Resource.
+     *
+     * @param <%= entityInstance %>InsertDTO the <%= instanceName %> to create.
+     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new <%= instanceName %>, or with status {@code 400 (Bad Request)} if the <%= entityInstance %> has already an ID.
+     * @throws URISyntaxException if the Location URI syntax is incorrect.
+     */
+
+    @Operation(summary = "Inserimento di un <%= entityClass %>", description="L'inserimento richiede obbligatoriamente ",  tags = { "<%= entityClass %> Resource" } )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "dati inseriti", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = <%= entityClass %>DTO.class)) }),
+            @ApiResponse(responseCode = "400", description = "Input non valido", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }),
+            @ApiResponse(responseCode = "500", description = "Errore di elaborazione", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }) })
+//  @PreAuthorize("hasAuthority('cfg_pro.C')")
+    @PostMapping
+         
+    public ResponseEntity<<%= entityClass %>DTO> create<%= entityClass %>(@RequestBody <%= entityClass %>InsertDTO dto) throws URISyntaxException, ServiceElaborationException {
+        log.debug("REST request to save <%= entityClass %> : {}", dto);
+       
+        <%= instanceType %> result;
+        try {
+            result = this.<%= entityInstance %>Service.save(dto);
+        } catch (ServiceElaborationException e) {
+            throw new RestApiException(e.getMessaggioErrore(),
+                    e.getAmbitoErrore().concat(" - ").concat(e.getTipoErrore()), e.getCodiceErrore());
+        }
+       return new ResponseEntity<>(result, HttpStatus.CREATED);
+    }
+
+    /**
+     * Updates an existing <%= entityInstance %>.
+     *
+     * @param <%= primaryKey.name %> the id of the <%= instanceName %> to save.
+     * @param <%= instanceName %> the <%= instanceName %> to update.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated <%= instanceName %>,
+     * or with status {@code 400 (Bad Request)} if the <%= instanceName %> is not valid,
+     * or with status {@code 500 (Internal Server Error)} if the <%= instanceName %> couldn't be updated.
+     * @throws URISyntaxException if the Location URI syntax is incorrect.
+     */
+
+    @Operation(summary = "Aggiornamento di un <%= entityClass %>", description = "L'inserimento richiede obbligatoriamente ", tags = { "<%= entityClass %> Resource" } )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "dati modificati", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = <%= entityClass %>DTO.class)) }),
+            @ApiResponse(responseCode = "400", description = "Input non valido", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }),
+            @ApiResponse(responseCode = "500", description = "Errore di elaborazione", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }) })
+//  @PreAuthorize("hasAuthority('cfg_pro.U')")
+    @PutMapping 
+    public ResponseEntity<<%= entityClass %>DTO> update<%= entityClass %>(       
+        <% if (validation) { %>@Valid <% } %>@RequestBody <%= entityClass %>UpdateDTO dto
+    ) throws URISyntaxException {
+        log.debug("REST request to update <%= entityClass %> : {}", dto);
+
+        <%= instanceType %> result;
+        try {
+            result = this.<%= entityInstance %>Service.update(dto);
+        } catch (ServiceElaborationException e) {
+            throw new RestApiException(e.getMessaggioErrore(),
+                    e.getAmbitoErrore().concat(" - ").concat(e.getTipoErrore()), e.getCodiceErrore());
+        }
+        return ResponseEntity.ok().body(result);
+    }
+
+
+    
+
+ @Operation(summary = "Recupera tutti i record che soddisfano i criteri di ricerca", description = "La ricerca richiede dei criteri validi", tags = { "<%= entityClass %> Resource" } )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ricerca Eseguita"),
+            @ApiResponse(responseCode = "400", description = "Input non valido", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }),
+            @ApiResponse(responseCode = "404", description = "Record non trovato", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }),
+            @ApiResponse(responseCode = "500", description = "Errore di elaborazione", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }) })
+//  @PreAuthorize("hasAuthority('cfg_pro.R')")
+
+    @GetMapping("/ricerca")
+ public ResponseEntity<Page<<%= entityClass %>DTO>> getAll<%= entityClassPlural %>(<%= entityClass %>Criteria criteria<% if (!paginationNo) { %>, Pageable pageable<% if (reactive) { %>, ServerHttpRequest request<% } %><% } %>) {
+        log.debug("REST request to get <%= entityClassPlural %> by criteria: {}", criteria);
+        Page<<%= entityClass %>DTO> page; 
+        try {
+            page = this.<%= entityInstance %>Service.findByCriteria(criteria, pageable);
+        } catch (ServiceElaborationException e) {
+            throw new RestApiException(e.getMessaggioErrore(),
+                    e.getAmbitoErrore().concat(" - ").concat(e.getTipoErrore()), e.getCodiceErrore());
+        }
+        return new ResponseEntity<>(page, HttpStatus.OK);
+    }
+
+
+    /**
+     * {@code DELETE  /<%= entityApiUrl %>/:id} : delete the "id" <%= entityInstance %>.
+     *
+     * @param id the id of the <%= instanceName %> to delete.
+     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
+     */
+
+    @Operation(summary = "Cancellazione di un <%= instanceName %> ", description = "La cancellazione richiede un id", tags = { "<%= entityClass %> Resource" } )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "dati eliminati", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = <%= instanceType %>.class)) }),
+        @ApiResponse(responseCode = "500", description = "Errore di elaborazione", content = {
+            @Content(mediaType = "application/json", schema = @Schema(implementation = Problem.class)) }) })
+    //@PreAuthorize("hasAuthority('cfg_pro.D')")
+    @DeleteMapping("/{id}")
+
+ 
+    public ResponseEntity<Boolean> delete<%= entityClass %>(@PathVariable UUID id) {
+        log.debug("REST request to delete <%= entityClass %> : {}", id);
+        
+        boolean result;
+        try {
+            result = this.<%= entityInstance %>Service.delete(id);
+        }
+        catch(ServiceElaborationException e) {
+            throw new RestApiException(e.getMessaggioErrore(),
+                    e.getAmbitoErrore().concat(" - ").concat(e.getTipoErrore()), e.getCodiceErrore());
+        }        
+    return ResponseEntity.ok().body(result);
+  } 
+
+   
+}

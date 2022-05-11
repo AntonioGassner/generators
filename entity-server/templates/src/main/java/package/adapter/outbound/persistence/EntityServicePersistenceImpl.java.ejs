@@ -1,0 +1,154 @@
+<%#
+ Copyright 2013-2021 the original author or authors from the JHipster project.
+
+ This file is part of the JHipster project, see https://www.jhipster.tech/
+ for more information.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-%>
+package <%= packageName %>.service;
+
+<%_
+const serviceClassName = entityClass + 'ServicePersistenceImpl';
+const serviceInterfaceClassName = entityClass + 'ServicePersistence';
+
+const instanceType = restClass;
+const instanceName = restInstance;
+const mapper = entityInstance  + 'Mapper';
+const dtoToEntity = mapper + '.'+ 'toEntity';
+const entityToDto = mapper + '.'+ 'toDto';
+const entityListToDto = mapper + '.' + 'toDto';
+const entityToDtoReference = mapper + '::'+ 'toDto';
+const repository = entityInstance  + 'Repository';
+const criteria = entityClass + 'Criteria';
+_%>
+import java.util.List;
+
+import javax.persistence.criteria.JoinType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import it.maggioli.icarocloud.baseservice.web.rest.errors.ErrorConstants;
+import it.maggioli.icarocloud.baseservice.web.rest.errors.IcaroPersistenceException;
+
+import <%= packageName %>.domain.<%= persistClass %>;
+import <%= packageName %>.domain.*;
+import <%= packageName %>.repository.<%= entityClass %>Repository;
+<%_ if (searchEngineElasticsearch) { _%>
+import <%= packageName %>.repository.search.<%= entityClass %>SearchRepository;
+<%_ } _%>
+import <%= packageName %>.service.criteria.<%= entityClass %>Criteria;
+<%_ if (dtoMapstruct) { _%>
+import <%= packageName %>.service.dto.<%= dtoClass %>;
+import <%= packageName %>.service.mapper.<%= entityClass %>Mapper;
+<%_ } _%>
+
+import <%= packageName %>.adapter.outbound.persistence.mapper.<%= persistClass %>EntityMapper;
+import <%= packageName %>.adapter.outbound.persistence.repository.<%= persistClass %>Repository;
+import <%= packageName %>.adapter.outbound.persistence.repository.model.<%= persistClass %>;
+import <%= packageName %>.application.model.<%= persistClass %>Model;
+import <%= packageName %>.application.port.outboud.persistence.<%= persistClass %>ServicePersistence;
+import java.util.UUID;
+
+/**
+ * Service for executing save, update and delete operations in the database.
+ * The main input is a {@link <%= entityClass %>Model}
+  */
+@Service
+@RequiredArgsConstructor
+public class <%= serviceClassName %> implements  <%= serviceInterfaceClassName %> {
+
+    private final Logger log = LoggerFactory.getLogger(<%= serviceClassName %>.class);  
+
+    private final <%= persistClass %>Repository <%= entityInstance %>Repository;
+    
+    private final <%= persistClass %>EntityMapper <%= entityInstance %>EntityMapper;
+    
+    @Autowired
+    private <%= serviceClassName %> self;
+    
+   @Override
+    public <%= persistClass %>Model save(<%= persistClass %>Model <%= entityInstance %>Model) throws IcaroPersistenceException {
+       
+        log.debug("Request to save <%= persistClass %>Model : {}", <%= entityInstance %>Model);
+
+        try {
+            return self.saveTx(<%= entityInstance %>Model);
+        } catch (RuntimeException ex) {
+            throw new IcaroPersistenceException(ErrorConstants.OP_INSERT, ex);
+        } catch (Exception ex) {
+            throw new IcaroPersistenceException(ErrorConstants.OP_INSERT, ex);
+        }
+    }
+    
+    
+    @Override
+    public <%= persistClass %>Model update(<%= persistClass %>Model <%= entityInstance %>Model) throws IcaroPersistenceException {
+        
+        log.debug("Request to save <%= persistClass %>Model : {}", <%= entityInstance %>Model);
+
+        try {
+            self.updateTx(<%= entityInstance %>Model);
+            <%= persistClass %> entity = <%= entityInstance %>Repository.findById(<%= entityInstance %>Model.getId()).orElse(null);
+            return this.<%= entityInstance %>EntityMapper.fromEntityToModel(entity);
+        } catch (RuntimeException ex) {
+            throw new IcaroPersistenceException(ErrorConstants.OP_INSERT, ex);
+        } catch (Exception ex) {            
+            throw new IcaroPersistenceException(ErrorConstants.OP_INSERT, ex);
+        }
+    }
+   
+
+    @Override
+    public boolean delete(UUID id) throws IcaroPersistenceException {
+        log.debug("Request to delete <%= persistClass %> : {}", id);
+        try {
+            self.deleteTx(id);
+            return true;
+        } catch (RuntimeException ex) {
+            throw new IcaroPersistenceException(ErrorConstants.OP_DELETE, ex);
+        } catch (Exception ex) {            
+            throw new IcaroPersistenceException(ErrorConstants.OP_DELETE, ex);
+        }
+    }
+
+
+   // --------------------------------- TRANSAZIONI ----------------------------------------------
+    
+    @Transactional
+    public <%= persistClass %>Model saveTx(<%= persistClass %>Model <%= entityInstance %>Model) {        
+        log.debug("Request to save <%= persistClass %>Model : {}", <%= entityInstance %>Model);                
+        <%= persistClass %> entity = this.<%= entityInstance %>EntityMapper.fromModelToEntity(<%= entityInstance %>Model);                                     
+        entity = <%= entityInstance %>Repository.saveAndFlush(entity);          
+        return this.<%= entityInstance %>EntityMapper.fromEntityToModel(entity);              
+     }
+    
+    @Transactional
+    public void updateTx(<%= persistClass %>Model <%= entityInstance %>Model) {        
+        log.debug("Request to update <%= persistClass %>Model : {}", <%= entityInstance %>Model);                        
+        <%= persistClass %> entity = this.<%= entityInstance %>EntityMapper.fromModelToEntity(<%= entityInstance %>Model);        
+        <%= entityInstance %>Repository.save(entity);                       
+     }
+
+    @Transactional()
+    public void deleteTx(UUID id) {
+        log.debug("Request to delete <%= persistClass %> : {}", id);
+        <%= entityInstance %>Repository.deleteById(id);
+    }      
+
+
+}
